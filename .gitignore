@@ -209,3 +209,5 @@ Thumbs.db
 
 # Project specific
 *.pl.tmp
+
+report.txt

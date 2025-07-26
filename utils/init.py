@@ -1,5 +1,7 @@
 from pyswip import Prolog
 import os
+import shutil
+import tempfile
 
 def init_prolog():
     """Initialize Prolog and load the knowledge base."""
@@ -79,14 +81,39 @@ CARS = [
 
 # Features and their possible options for MCQ
 FEATURES = [
-    ("brand", ["Suzuki", "Toyota", "Honda", "Hyundai", "KIA", "Changan", "MG", "Haval", "BAIC", "Proton", "NUR", "Adam", "DFSK", "Isuzu", "Peugeot", "Chery"]),
-    ("body", ["Hatchback", "Sedan", "SUV", "MPV", "Minivan", "Pickup", "Crossover"]),
-    ("engine", ["660cc", "800cc", "1.0L", "1.2L", "1.3L", "1.4L", "1.5L", "1.6L", "2.0L", "2.5L", "2.7L", "2.8L", "3.0L", "Electric"]),
-    ("fuel", ["Gasoline", "Diesel", "Hybrid", "Electric", "Turbo"]),
+    ("brand", ["suzuki", "toyota", "honda", "hyundai", "kia", "changan", "mg", "haval", "baic", "proton", "nur", "adam", "dfsk", "isuzu", "peugeot", "chery"]),
+    ("body", ["hatchback", "sedan", "suv", "mpv", "minivan", "pickup", "crossover"]),
+    ("engine", ["660cc", "800cc", "1.0L", "1.2L", "1.3L", "1.4L", "1.5L", "1.6L", "2.0L", "2.5L", "2.7L", "2.8L", "3.0L", "electric"]),
+    ("fuel", ["gasoline", "diesel", "hybrid", "electric", "turbo"]),
     ("seating", [4, 5, 7]),
-    ("price", ["Budget", "Medium", "Premium"]),
+    ("price", ["budget", "medium", "premium"]),
 ]
 
 def filter_cars(cars, feature, value):
     """Return a filtered list of cars matching the feature/value."""
     return [car for car in cars if car[feature] == value]
+
+# Prolog interface
+class CarProlog:
+    def __init__(self):
+        self.prolog = Prolog()
+        # Copy Prolog file to a temp directory with a simple path
+        orig_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "prolog", "cars.pl")
+        temp_path = os.path.join(tempfile.gettempdir(), "cars.pl")
+        shutil.copy2(orig_path, temp_path)
+        prolog_path = temp_path.replace("\\", "/")
+        list(self.prolog.query(f'consult("{prolog_path}")'))
+
+    def reset(self):
+        self.prolog.retractall("selected(_,_)" )
+
+    def assert_selection(self, feature, value):
+        # Convert value to lowercase and handle int/str
+        if isinstance(value, int):
+            v = value
+        else:
+            v = value.lower()
+        self.prolog.assertz(f"selected({feature},{repr(v)})")
+
+    def get_matches(self):
+        return [r['Name'] for r in self.prolog.query("matches(Name)")]
